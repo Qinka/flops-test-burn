@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use burn::{Tensor, prelude::Backend};
+use burn::{Tensor, prelude::*, tensor::f16};
 use clap::{Parser, ValueEnum};
 use tracing::{debug, info};
 
@@ -23,6 +23,13 @@ pub enum BackendType {
   /// with cuda
   #[cfg(feature = "cuda")]
   Cuda,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+pub enum FloatType {
+  F16,
+  F32,
+  F64,
 }
 
 impl Display for BackendType {
@@ -51,6 +58,8 @@ pub struct FlopsTest {
   pub repeat_times: usize,
   #[arg(long, help = "Backend to use")]
   pub backend: BackendType,
+  #[arg(long, help = "Float type to use")]
+  pub float_type: FloatType,
 }
 
 fn main() {
@@ -60,40 +69,99 @@ fn main() {
   debug!("Parsed arguments: {:?}", args);
 
   info!(
-    "Running FLOPS test with matrix size {} and repeat times {} using backend {}",
-    args.matrix_size, args.repeat_times, args.backend
+    "Running FLOPS test with matrix size {} and repeat times {} using backend {} and float {:?}",
+    args.matrix_size, args.repeat_times, args.backend, args.float_type
   );
 
   match args.backend {
     #[cfg(feature = "cpu")]
     BackendType::Cpu => {
       info!("Using CPU backend for FLOPS test");
-      let device = Default::default();
-      flops_test::<burn::backend::Cpu>(&device, args.matrix_size, args.repeat_times)
+      match args.float_type {
+        FloatType::F16 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Cpu<f16>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F32 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Cpu<f32>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F64 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Cpu<f64>>(&device, args.matrix_size, args.repeat_times)
+        }
+      }
     }
     #[cfg(feature = "ndarray")]
     BackendType::Ndarray => {
       info!("Using NDArray backend for FLOPS test");
-      let device = Default::default();
-      flops_test::<burn::backend::NdArray>(&device, args.matrix_size, args.repeat_times)
+      match args.float_type {
+        FloatType::F32 => {
+          let device = Default::default();
+          flops_test::<burn::backend::NdArray<f32>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F64 => {
+          let device = Default::default();
+          flops_test::<burn::backend::NdArray<f64>>(&device, args.matrix_size, args.repeat_times)
+        }
+        _ => {
+          panic!("NDArray backend only supports f32 and f64");
+        }
+      }
     }
     #[cfg(feature = "wgpu")]
     BackendType::Wgpu => {
       info!("Using WGPU backend for FLOPS test");
-      let device = Default::default();
-      flops_test::<burn::backend::Wgpu>(&device, args.matrix_size, args.repeat_times)
+      match args.float_type {
+        FloatType::F16 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Wgpu<f16>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F32 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Wgpu<f32>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F64 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Wgpu<f64>>(&device, args.matrix_size, args.repeat_times)
+        }
+      }
     }
     #[cfg(feature = "vulkan")]
     BackendType::Vulkan => {
       info!("Using Vulkan backend for FLOPS test");
-      let device = Default::default();
-      flops_test::<burn::backend::Vulkan>(&device, args.matrix_size, args.repeat_times)
+      match args.float_type {
+        FloatType::F16 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Vulkan<f16>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F32 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Vulkan<f32>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F64 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Vulkan<f64>>(&device, args.matrix_size, args.repeat_times)
+        }
+      }
     }
     #[cfg(feature = "cuda")]
     BackendType::Cuda => {
       info!("Using CUDA backend for FLOPS test");
-      let device = Default::default();
-      flops_test::<burn::backend::Cuda>(&device, args.matrix_size, args.repeat_times)
+      match args.float_type {
+        FloatType::F16 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Cuda<f16>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F32 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Cuda<f32>>(&device, args.matrix_size, args.repeat_times)
+        }
+        FloatType::F64 => {
+          let device = Default::default();
+          flops_test::<burn::backend::Cuda<f64>>(&device, args.matrix_size, args.repeat_times)
+        }
+      }
     }
   }
 }
