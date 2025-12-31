@@ -3,7 +3,7 @@
 use std::fmt::Display;
 
 use burn::{Tensor, prelude::Backend};
-use clap::{Parser, ValueEnum, command};
+use clap::{Parser, ValueEnum};
 use tracing::{debug, info};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -99,13 +99,18 @@ fn main() {
 }
 
 fn flops_test<B: Backend>(device: &B::Device, matrix_size: usize, repeat_times: usize) {
-  let a = Tensor::<B, 2>::random([matrix_size, matrix_size], Default::default(), device);
-  let b = Tensor::<B, 2>::random([matrix_size, matrix_size], Default::default(), device);
+  let a = Tensor::random([matrix_size, matrix_size], Default::default(), device);
+  let b = Tensor::random([matrix_size, matrix_size], Default::default(), device);
 
+  for _ in 0..repeat_times {
+    let _ = Tensor::<B, 2>::matmul(a.clone().detach(), b.clone().detach());
+  }
+  B::sync(device);
   let now = std::time::Instant::now();
   for _ in 0..repeat_times {
-    let _c = Tensor::<B, 2>::matmul(a.clone(), b.clone());
+    let _ = Tensor::<B, 2>::matmul(a.clone().detach(), b.clone().detach());
   }
+  B::sync(device);
   let duration = now.elapsed();
 
   let flops = 2.0 * (matrix_size as f64).powi(3) * (repeat_times as f64);
